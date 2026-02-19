@@ -1,3 +1,14 @@
+import os
+import re
+
+import numpy as np
+from sklearn.model_selection import train_test_split
+from transformers import AutoTokenizer
+
+MODEL_NAME = 'distilgpt2'
+TRAIN_MODE = os.getenv('TRAIN_MODE')
+SEED = os.getenv('SEED')
+
 # set data directory
 os.chdir('C:/Users/User/Yandex.Disk/DS.projects/LSTM.Praktikum/data')
 # read raw text data and save to array
