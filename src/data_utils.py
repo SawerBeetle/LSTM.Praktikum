@@ -7,16 +7,23 @@ from transformers import AutoTokenizer
 
 MODEL_NAME = 'distilgpt2'
 TRAIN_MODE = os.getenv('TRAIN_MODE')
-SEED = os.getenv('SEED')
+SEED = int(os.getenv('SEED'))
 
-# set data directory
-os.chdir('C:/Users/User/Yandex.Disk/DS.projects/LSTM.Praktikum/data')
+print(f'Работаем в TRAIN_MODE = {TRAIN_MODE}.')
+print(15 * '-')
+
+# set path to file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.dirname(current_dir)
+file_path_raw = os.path.join(data_dir, 'data', 'raw_data.txt')
 # read raw text data and save to array
-with open('raw_data.txt', 'r', encoding='utf-8') as file:
+with open(file_path_raw, 'r', encoding='utf-8') as file:
     raw_data = np.array(file.read().lower().splitlines())
 
 if TRAIN_MODE == 'preliminar': 
     raw_data = raw_data[:1_000]
+print(f'Используем {len(raw_data)} твитов.')
+print(15 * '-')
 
 # define the function for clearing and splitting of data
 def split_and_clean(row): 
@@ -59,6 +66,7 @@ if TRAIN_MODE == 'preliminar':
         print(raw_data[_])
 
 print(f'Количество фраз до удаления слишком коротких: {len(raw_data)}.')
+print(15 * '-')
 # drop too short phrases
 raw_data = [phrase for phrase in raw_data if len(phrase) > 5]
 
@@ -68,9 +76,11 @@ if len(min(raw_data, key=len)) < 6:
     print('Очистка от коротких фраз прошла с ошибкой.')
 else: 
     print('Все короткие фразы удалены.')
+print(15 * '-')
 
+file_path_processed = os.path.join(data_dir, 'data', 'processed_data.txt')
 # save the processed (cleaned) dataset
-with open('processed_data.txt', 'w+', encoding='utf-8') as file: 
+with open(file_path_processed, 'w+', encoding='utf-8') as file: 
     for row in raw_data:
         file.write(' '.join(row) + '\n')
 
@@ -84,15 +94,19 @@ del interhim
 print(f'В обучающей выборке содержится {len(train)} фраз.')
 print(f'В валидационной выборке содержится {len(valid)} фраз.')
 print(f'В тестовой выборке содержится {len(test)} фраз.')
+print(15 * '-')
 
 # save the datasets to disk
-with open('train.txt', 'w+', encoding='utf-8') as file: 
+file_path_train = os.path.join(data_dir, 'data', 'train.txt')
+with open(file_path_train, 'w+', encoding='utf-8') as file: 
     for row in train:
         file.write(' '.join(row) + '\n')
-with open('valid.txt', 'w+', encoding='utf-8') as file: 
+file_path_valid = os.path.join(data_dir, 'data', 'valid.txt')
+with open(file_path_valid, 'w+', encoding='utf-8') as file: 
     for row in valid:
         file.write(' '.join(row) + '\n')
-with open('test.txt', 'w+', encoding='utf-8') as file: 
+file_path_test = os.path.join(data_dir, 'data', 'test.txt')
+with open(file_path_test, 'w+', encoding='utf-8') as file: 
     for row in test:
         file.write(' '.join(row) + '\n')
 
@@ -100,6 +114,7 @@ with open('test.txt', 'w+', encoding='utf-8') as file:
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, add_prefix_space=True)
 if TRAIN_MODE == 'preliminar': 
     print(tokenizer)
+    print(15 * '-')
 
 tokenizer.pad_token = tokenizer.eos_token
 

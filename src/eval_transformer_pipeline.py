@@ -1,3 +1,28 @@
+import os
+from datetime import datetime
+
+from rouge_score import rouge_scorer
+import torch
+from transformers import AutoTokenizer
+from transformers import logging
+from transformers import pipeline
+from tqdm.auto import tqdm
+
+from lstm_train import test_tok_complete
+
+MODEL_NAME = os.getenv('MODEL_NAME')
+TRAIN_MODE = os.getenv('TRAIN_MODE')
+SAVE_WEIGHT = bool(os.getenv('SAVE_WEIGHT'))
+
+# add pretrained tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, add_prefix_space=True)
+if TRAIN_MODE == 'preliminar': 
+    print(tokenizer)
+
+# set the ROUGE scorer
+metric_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2'], use_stemmer=True)
+
+tokenizer.pad_token = tokenizer.eos_token
 generator = pipeline("text-generation", model="distilgpt2", tokenizer=tokenizer)
 logging.set_verbosity_error() 
 # set the empty list of completed texts
@@ -55,6 +80,18 @@ finish = datetime.now() - start
 mean_time = finish.total_seconds() / len(test_tok_complete)
 print(f'Время дополнения одной фразы с помощью distilgpt2 равно {mean_time:.3f} секунд.')
 
+# the empty list for target phrases
+output_targets = []
+
+# fill the 'output_targets'
+for _ in range(len(test_tok_complete)):
+    # get the tokinized target
+    output_target = test_tok_complete.__getitem__(_)['target']
+    # decode the target
+    output_target = tokenizer.decode(output_target, skip_special_tokens=True)
+    # add the target to 'output_targets'
+    output_targets.append(list(filter(None, output_target.split(' '))))
+    
 # initiate the metric values by zeros
 rouge1 = 0.
 rouge2 = 0.
@@ -73,3 +110,10 @@ print('Метрики качества distilgpt2: ')
 print()
 print(f'ROUGE1 = {(rouge1 / len(output_texts)):.4f} | ROUGE2 = {(rouge2 / len(output_texts)):.4f}') 
 
+# save model weights
+if SAVE_WEIGHT:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.dirname(current_dir)
+    file_path_weights = os.path.join(data_dir, 'models', 'distilgpt2_model_weights.pth')
+    model = generator.model
+    torch.save(model.state_dict(), file_path_weights)

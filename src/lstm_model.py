@@ -1,3 +1,19 @@
+import os
+
+import torch
+import torch.nn as nn
+from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
+from transformers import AutoTokenizer
+
+TRAIN_MODE = os.getenv('TRAIN_MODE')
+CHECK_MESSAGES = bool(os.getenv('CHECK_MESSAGES'))
+MODEL_NAME = os.getenv('MODEL_NAME')
+
+# add pretrained tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, add_prefix_space=True)
+if TRAIN_MODE == 'preliminar': 
+    print(tokenizer)
+
 class LSTMClassifier(nn.Module):
     def __init__(self, vocab_size, hidden_dim=256):
         super().__init__()
@@ -45,7 +61,4 @@ class LSTMClassifier(nn.Module):
 
 # create an exemplar of LSTM model
 model_lstm = LSTMClassifier(vocab_size=tokenizer.vocab_size)
-# create an optimizer
-optimizer = torch.optim.Adam(model_lstm.parameters(), lr=0.001)
-# set the cross-entropy loss calculator
-criterion = nn.CrossEntropyLoss()
+

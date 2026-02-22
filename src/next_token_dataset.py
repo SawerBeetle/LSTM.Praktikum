@@ -1,3 +1,45 @@
+import os
+
+from rouge_score import rouge_scorer
+import numpy as np
+import torch
+from transformers import AutoTokenizer
+from torch.utils.data import Dataset, DataLoader
+from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
+
+TRAIN_MODE = os.getenv('TRAIN_MODE')
+BATCH_SIZE = int(os.getenv('BATCH_SIZE'))
+MODEL_NAME = os.getenv('MODEL_NAME')
+
+# open the datasets
+current_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.dirname(current_dir)
+file_path_train = os.path.join(data_dir, 'data', 'train.txt')
+print(15 * '-')
+with open(file_path_train, 'r', encoding='utf-8') as file: 
+    train = file.read().splitlines()
+    train = [line for line in train if line.strip()]
+file_path_valid = os.path.join(data_dir, 'data', 'valid.txt')
+with open(file_path_valid, 'r', encoding='utf-8') as file: 
+    valid = file.read().splitlines()
+    valid = [line for line in valid if line.strip()]
+file_path_test = os.path.join(data_dir, 'data', 'test.txt')
+with open(file_path_test, 'r', encoding='utf-8') as file: 
+    test = file.read().splitlines()
+    test = [line for line in test if line.strip()]
+
+# add pretrained tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, add_prefix_space=True)
+if TRAIN_MODE == 'preliminar': 
+    print(tokenizer)
+
+tokenizer.pad_token = tokenizer.eos_token
+
+def tokenize(row):
+    return tokenizer.encode(
+        row, add_special_tokens=True, return_tensors='pt', 
+        )
+
 # класс датасета
 class MaskedDataset(Dataset):
     def __init__(self, texts, tokenizer=tokenize, target_mode='single'):
@@ -33,16 +75,7 @@ class MaskedDataset(Dataset):
 if TRAIN_MODE == 'preliminar': 
     print('Пример содержимого класса MaskedDataset: ')
     print(MaskedDataset(train, tokenize)[np.random.randint(0, len(train), 1).item()])
-
-if TRAIN_MODE == 'preliminar': 
-    print('Пример содержимого класса MaskedDataset: ')
-    print(MaskedDataset(train, tokenize)[np.random.randint(0, len(train), 1).item()])
-
-# create tokenized datasets
-train_tok = MaskedDataset(train, tokenize)
-valid_tok = MaskedDataset(valid, tokenize)
-test_tok = MaskedDataset(test, tokenize)
-test_tok_complete = MaskedDataset(test, tokenize, 'complete')
+    print(15 * '-')
 
 def collate_fn(batch): 
     # список текстов и классов из батча
@@ -60,6 +93,8 @@ def collate_fn(batch):
     # возвращаем преобразованный батч
     return padded_contexts, masks, lengths, targets
 
+train_tok = MaskedDataset(train, tokenize)
+
 if TRAIN_MODE == 'preliminar': 
     print('Размеры выдачи функции collate_fn (без разделения на батчи): ')
     padded_contexts, masks, lengths, targets = collate_fn(train_tok)
@@ -67,32 +102,6 @@ if TRAIN_MODE == 'preliminar':
     print(masks.shape)
     print(lengths.shape)
     print(targets.shape)
+    print(15 * '-')
 
-# create dataloaders
-train_dataloader = DataLoader(
-    train_tok, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn
-    )
-valid_dataloader = DataLoader(
-    valid_tok, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn
-    )
-test_dataloader = DataLoader(
-    test_tok, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn
-    )
-test_compl_dataloader = DataLoader(
-    test_tok_complete, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn
-    )
-
-if TRAIN_MODE == 'preliminar': 
-    print(f'Количество батчей в train_dataloader: {len(train_dataloader)}')
-    print(f'Размер батча равен {BATCH_SIZE}')
-    print()
-    for x_batch, masks, lengths, y_batch in train_dataloader: 
-        print('Содержимое контекстов в батче: ')
-        print(x_batch)
-        print(f'Размерность тензора с контекстом: {x_batch.shape}')
-        print()
-        print('Содержимое таргетов в батче: ')
-        print(y_batch)
-        print(f'Размерность тензора с таргетом: {y_batch.shape}')
-        break
 
