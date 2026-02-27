@@ -17,6 +17,7 @@ CHECK_MESSAGES = bool(os.getenv('CHECK_MESSAGES'))
 MODEL_NAME = os.getenv('MODEL_NAME')
 SAVE_WEIGHT = bool(os.getenv('SAVE_WEIGHT'))
 TRAIN_MODE = os.getenv('TRAIN_MODE')
+N_EPOCHS = int(os.environ['N_EPOCHS'])
 
 # open the datasets
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +35,10 @@ file_path_test = os.path.join(data_dir, 'data', 'test.txt')
 with open(file_path_test, 'r', encoding='utf-8') as file: 
     test = file.read().splitlines()
     test = [line for line in test if line.strip()]
+
+# to make test more fast
+if TRAIN_MODE == 'final':
+    test = test[:1000]
 
 # create tokenized datasets
 train_tok = MaskedDataset(train, tokenize)
@@ -136,14 +141,8 @@ def evaluate_single_token(model, loader):
 # add a dictionary for loss/accuracy visualisation
 hist = {'train_loss': [], 'val_loss': [], 'val_acc': []} 
 
-# Основной цикл обучения
-if TRAIN_MODE == 'preliminar': 
-    n_epochs = 5
-else: 
-    n_epochs = 1000
-
 if __name__ == '__main__':
-    for epoch in range(n_epochs):
+    for epoch in range(N_EPOCHS):
         model_lstm.train()
         # initial loss value
         train_loss = 0.
@@ -192,7 +191,7 @@ if __name__ == '__main__':
         hist['val_loss'].append(val_loss)
         hist['val_acc'].append(val_acc)
 
-        epochs = range(n_epochs)
+        epochs = range(N_EPOCHS)
 
     # Потеря
     plt.subplot(1, 2, 1)
@@ -206,7 +205,7 @@ if __name__ == '__main__':
 
     # Точность
     plt.subplot(1, 2, 2)
-    plt.plot(range(n_epochs), hist['val_acc'], marker='o', label="Val Acc")
+    plt.plot(range(N_EPOCHS), hist['val_acc'], marker='o', label="Val Acc")
     plt.title("Сравнение точности на валидации")
     plt.xlabel("Эпоха")
     plt.ylabel("Accuracy (%)")

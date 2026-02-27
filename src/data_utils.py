@@ -19,6 +19,8 @@ file_path_raw = os.path.join(data_dir, 'data', 'raw_data.txt')
 # read raw text data and save to array
 with open(file_path_raw, 'r', encoding='utf-8') as file:
     raw_data = np.array(file.read().lower().splitlines())
+    # temporary, for local machine
+    # raw_data = raw_data[:10_000]
 
 if TRAIN_MODE == 'preliminar': 
     raw_data = raw_data[:1_000]

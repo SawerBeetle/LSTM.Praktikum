@@ -43,7 +43,7 @@ with torch.no_grad():
 
         # Complete the text while model output was not zero 
         # or below 200 words (max length of tweet). 
-        while(preds_int != 0 and len(input_text) < 200): 
+        while(preds_int != tokenizer.eos_token_id and n_tokens < 200): 
             
             # get the token predicted by input part of phrase
             # get logits
@@ -57,7 +57,12 @@ with torch.no_grad():
             # print(logits)
 
             # get logit for the last token
-            last_token_logits = x_output[:, -1, :] 
+            # last_token_logits = x_output[:, -1, :] 
+            if x_output.dim() == 3:
+                last_token_logits = x_output[:, -1, :] 
+            else:
+                # Если ваша модель сразу возвращает [1, vocab_size] для последнего токена
+                last_token_logits = x_output
 
             # Because of the model picks the most probable logit and give us the equal result 
             # for each analyzed tweet, we should use the 'temperature sampling' to make the 
@@ -71,7 +76,7 @@ with torch.no_grad():
             preds = torch.multinomial(probs, num_samples=1)[0]
 
             # get modal value of logits
-            preds = torch.multinomial(probs, num_samples=1)[0]
+            # preds = torch.multinomial(probs, num_samples=1)[0]
             # print(preds)
 
             # get value to check stop condition of the 'while' loop
@@ -88,12 +93,12 @@ with torch.no_grad():
             # of the text to ROUGE calculation. 
             if n_tokens == 0:
                 output_text = preds
-                n_tokens += 1
             else: 
                 output_text = torch.cat(
                     (output_text, preds.to(output_text.dtype).view(-1)), 
                     dim=0
                 )
+            n_tokens += 1
 
         # decode the completed text
         input_text = tokenizer.decode(input_text, skip_special_tokens=True)
